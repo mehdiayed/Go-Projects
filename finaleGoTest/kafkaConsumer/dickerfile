@@ -1,0 +1,15 @@
+FROM golang:1.20-alpine AS build
+
+WORKDIR /go/src/app
+
+COPY . .
+
+RUN go build -o app .
+
+FROM alpine:3.14
+
+WORKDIR /app
+
+COPY --from=build /go/src/app/app .
+
+CMD ["./app"]

@@ -1,0 +1,64 @@
+kafka:
+  image: wurstmeister/kafka
+  container_name: kafka
+  ports:
+    - "9092:9092"
+  environment:
+    KAFKA_ADVERTISED_HOST_NAME: kafka
+    KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  networks:
+    - kafka-network
+kafka-http-connector:
+  image: confluentinc/kafka-connect-datagen:latest
+  container_name: kafka-http-connector
+  ports:
+    - "8083:8083"
+  environment:
+    CONNECT_BOOTSTRAP_SERVERS: kafka:9092
+    CONNECT_REST_ADVERTISED_HOST_NAME: kafka-http-connector
+    CONNECT_GROUP_ID: kafka-http-connector-group
+    CONNECT_CONFIG_STORAGE_TOPIC: kafka-http-connector-config
+    CONNECT_OFFSET_STORAGE_TOPIC: kafka-http-connector-offsets
+    CONNECT_STATUS_STORAGE_TOPIC: kafka-http-connector-status
+    CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    CONNECT_REST_PORT: 8083
+    CONNECT_PLUGIN_PATH: /usr/share/java
+    CONNECTORS: file-stream-sink
+    # The following settings configure the file-stream-sink connector
+    CONNECTOR_TASKS_MAX: 1
+    FILE_STREAM_SINK_TASK_TOPICS: egauge
+    FILE_STREAM_SINK_TASK_FILENAME: /tmp/egauge_data.txt
+    FILE_STREAM_SINK_TASK_FLUSH_SIZE: 1000
+    FILE_STREAM_SINK_TASK_ROTATE_INTERVAL_MS: 30000
+    FILE_STREAM_SINK_TASK_LINGER_MS: 500
+    FILE_STREAM_SINK_TASK_COMPRESSION_TYPE: gzip
+  networks:
+    - kafka-network
+egauge-producer:
+  build:
+    context: .
+    dockerfile: Dockerfile-egauge-producer
+  container_name: egauge-producer
+  networks:
+    - kafka-network
+  environment:
+    KAFKA_TOPIC: egauge
+    KAFKA_BROKERS: kafka:9092
+    EGAUGE_HOST: 192.168.1.88
+    EGAUGE_USER: owner
+    EGAUGE_PASSWORD: 000000
+golang-consumer:
+  build:
+    context: .
+    dockerfile: Dockerfile-golang-consumer
+  container_name: golang-consumer
+  networks:
+    - kafka-network
+  environment:
+    KAFKA_BROKERS: kafka:9092
+    KAFKA_TOPIC: egauge
+networks:
+  kafka-network:
+    driver: bridge

@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../testnode"
+		},
+		{
+			"path": "../testgolang2"
+		},
+		{
+			"path": "../GoProjectTest"
+		}
+	],
+	"settings": {}
+}
